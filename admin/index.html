@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>互助小程序 · 管理后台</title>
+<style>
+:root {
+  --bg: #f0f2f5;
+  --surface: #fff;
+  --fg: #1a1a1a;
+  --muted: #888;
+  --border: #e8e8e8;
+  --accent: #4A90D9;
+  --danger: #E05050;
+  --radius: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'PingFang SC', sans-serif; background: var(--bg); color: var(--fg); }
+h2 { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+
+.app { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 200px; background: #1a1a2e; color: #fff; padding: 20px 0;
+  display: flex; flex-direction: column; flex-shrink: 0;
+}
+.sidebar .logo { font-size: 16px; font-weight: 700; padding: 0 20px 24px; color: var(--accent); }
+.sidebar .nav-item {
+  padding: 12px 20px; font-size: 14px; cursor: pointer; transition: background 0.15s;
+  border-left: 3px solid transparent;
+}
+.sidebar .nav-item:hover { background: rgba(255,255,255,0.05); }
+.sidebar .nav-item.active { background: rgba(74,144,217,0.15); border-left-color: var(--accent); color: var(--accent); }
+
+.main { flex: 1; padding: 24px 32px; overflow-y: auto; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.card { background: var(--surface); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 12px; border: 1px solid var(--border); }
+.card-header { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--muted); }
+
+.form-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-end; flex-wrap: wrap; }
+.form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+.form-label { font-size: 12px; font-weight: 500; color: var(--muted); }
+.form-input {
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: 13px; font-family: inherit; outline: none; background: #fafafa;
+}
+.form-input:focus { border-color: var(--accent); background: #fff; }
+.form-input.wide { flex: 3; }
+
+.btn {
+  padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500;
+  border: none; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-danger { background: none; color: var(--danger); border: 1px solid var(--danger); }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-save {
+  background: var(--accent); color: #fff; padding: 10px 32px; font-size: 14px;
+  border-radius: 6px; border: none; cursor: pointer; font-weight: 600;
+}
+
+.item-row {
+  display: flex; align-items: center; gap: 10px; padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.item-row:last-child { border-bottom: none; }
+.item-row .order { width: 50px; color: var(--muted); font-size: 13px; }
+.item-row .name { flex: 1; font-size: 14px; }
+.item-row input { font-size: 13px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 4px; outline: none; flex: 1; }
+.item-row input:focus { border-color: var(--accent); }
+
+.toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  background: #1a1a1a; color: #fff; padding: 10px 24px; border-radius: 20px;
+  font-size: 14px; z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.toast.show { opacity: 1; }
+
+.hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+.add-row { margin-top: 16px; display: flex; gap: 10px; }
+.add-row input { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="logo">互助小程序 · 管理后台</div>
+    <div class="nav-item active" data-panel="banner">Banner 管理</div>
+    <div class="nav-item" data-panel="categories">分类标签管理</div>
+    <div class="nav-item" data-panel="locations">地点管理</div>
+    <div class="nav-item" data-panel="icons">图标配置</div>
+    <div class="nav-item" data-panel="orders">内容管理</div>
+  </div>
+
+  <div class="main">
+    <!-- Banner Panel -->
+    <div class="panel active" id="panel-banner">
+      <div class="panel-header">
+        <h2>Banner 管理</h2>
+        <button class="btn btn-save" onclick="saveConfig()">保存</button>
+      </div>
+      <p class="hint" style="margin-bottom:16px;">配置 Banner 的图片链接、跳转链接和展示顺序，保存后小程序自动生效</p>
+      <div id="bannerList"></div>
+      <button class="btn btn-primary" style="margin-top:12px;" onclick="addBanner()">+ 新增 Banner</button>
+    </div>
+
+    <!-- Categories Panel -->
+    <div class="panel" id="panel-categories">
+      <div class="panel-header">
+        <h2>分类标签管理</h2>
+        <button class="btn btn-save" onclick="saveConfig()">保存</button>
+      </div>
+      <p class="hint" style="margin-bottom:16px;">配置首页筛选标签和发布页任务类型，第一个建议保留为"全部"</p>
+      <div id="catList"></div>
+      <div class="add-row">
+        <input class="form-input" id="newCat" placeholder="输入新分类名称" />
+        <button class="btn btn-primary" onclick="addCategory()">添加</button>
+      </div>
+    </div>
+
+    <!-- Locations Panel -->
+    <div class="panel" id="panel-locations">
+      <div class="panel-header">
+        <h2>地点管理</h2>
+        <button class="btn btn-save" onclick="saveConfig()">保存</button>
+      </div>
+      <p class="hint" style="margin-bottom:16px;">配置发布任务时的所在地点选项</p>
+      <div id="locList"></div>
+      <div class="add-row">
+        <input class="form-input" id="newLoc" placeholder="输入新地点名称" />
+        <button class="btn btn-primary" onclick="addLocation()">添加</button>
+      </div>
+    </div>
+
+    <!-- Icons Panel -->
+    <div class="panel" id="panel-icons">
+      <div class="panel-header">
+        <h2>底部 Tab 图标配置</h2>
+        <button class="btn btn-save" onclick="saveConfig()">保存</button>
+      </div>
+      <p class="hint" style="margin-bottom:16px;">上传底部导航栏 4 个 tab 的图标（普通态 + 选中态）</p>
+      <div id="iconsList"></div>
+    </div>
+
+    <!-- Orders Panel -->
+    <div class="panel" id="panel-orders">
+      <div class="panel-header">
+        <h2>内容管理 · 订单列表</h2>
+        <button class="btn btn-save" onclick="loadOrders()">刷新</button>
+      </div>
+      <div id="ordersList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULT_CONFIG = {
+  tabIcons: {
+    home: { iconPath: '/images/home.png', selectedIconPath: '/images/home-active.png' },
+    publish: { iconPath: '/images/publish.png', selectedIconPath: '/images/publish-active.png' },
+    messages: { iconPath: '/images/msg.png', selectedIconPath: '/images/msg-active.png' },
+    profile: { iconPath: '/images/profile.png', selectedIconPath: '/images/profile-active.png' }
+  },
+  categoryIcons: {},
+  banners: [
+    { image: '', url: '', order: 1 },
+    { image: '', url: '', order: 2 },
+    { image: '', url: '', order: 3 }
+  ],
+  categories: ['全部', '互帮互助', '代办跑腿', '二手交易', '失物招领', '拼车出行', '学习答疑'],
+  locations: ['主校区', '东校区', '西校区', '南校区', '图书馆', '体育馆', '食堂', '教学楼', '宿舍区']
+};
+
+let config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+
+async function init() {
+  try {
+    const res = await fetch('/api/config');
+    if (res.ok) config = await res.json();
+  } catch(e) {}
+  renderAll();
+}
+init();
+
+function renderAll() { renderBanners(); renderCategories(); renderLocations(); renderIcons(); }
+
+function saveConfig() {
+  const pw = prompt('请输入管理密码：');
+  if (!pw) return;
+  config.banners.forEach((b,i) => b.order = i+1);
+  fetch('/api/config/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...config, password: pw })
+  }).then(res => {
+    if (res.ok) { showToast('已保存'); renderAll(); }
+    else showToast('密码错误或保存失败');
+  }).catch(() => showToast('保存失败'));
+}
+
+let tTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(tTimer); tTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// Navigation
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + item.dataset.panel).classList.add('active');
+    if (item.dataset.panel === 'orders') loadOrders();
+    if (item.dataset.panel === 'icons') renderIcons();
+  });
+});
+
+// ---- Banner ----
+function renderBanners() {
+  document.getElementById('bannerList').innerHTML = config.banners
+    .sort((a,b) => (a.order||0) - (b.order||0))
+    .map((b,i) => `
+    <div class="card">
+      <div class="card-header">Banner #${b.order || i+1}</div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">图片</label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input class="form-input" value="${esc(b.image)}" placeholder="图片链接" onchange="updateBanner(${i},'image',this.value)" style="flex:1;" />
+            <label class="btn btn-primary" style="cursor:pointer;font-size:12px;padding:8px 12px;white-space:nowrap;">本地上传
+              <input type="file" accept="image/*" style="display:none;" onchange="uploadBanner(${i},this)" />
+            </label>
+          </div>
+        </div>
+      </div>
+      ${b.image ? `<div style="margin:8px 0;"><img src="${esc(b.image)}" style="max-width:300px;max-height:120px;border-radius:6px;border:1px solid var(--border);" /></div>` : ''}
+      <div class="form-row">
+        <div class="form-group" style="flex:3;"><label class="form-label">跳转链接</label><input class="form-input" value="${esc(b.url)}" placeholder="/pages/..." onchange="updateBanner(${i},'url',this.value)" /></div>
+        <div class="form-group"><label class="form-label">顺序</label><input class="form-input" type="number" value="${b.order||i+1}" style="width:60px;" onchange="updateBanner(${i},'order',parseInt(this.value)||0)" /></div>
+      </div>
+      <button class="btn btn-danger btn-sm" style="margin-top:6px;" onclick="removeBanner(${i})">删除</button>
+    </div>
+  `).join('');
+}
+function addBanner() {
+  config.banners.push({ image: '', url: '', order: config.banners.length+1 });
+  renderBanners();
+}
+function removeBanner(i) { config.banners.splice(i,1); renderBanners(); }
+function updateBanner(i,key,val) { config.banners[i][key]=val; }
+async function uploadBanner(i, input) {
+  const file = input.files[0]; if (!file) return;
+  const form = new FormData(); form.append('file', file);
+  try {
+    showToast('上传中...');
+    const res = await fetch('/api/upload', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.ok) {
+      config.banners[i].image = data.url;
+      renderBanners();
+      showToast('上传成功');
+    } else { showToast('上传失败'); }
+  } catch(e) { showToast('上传失败'); }
+}
+
+// ---- Categories ----
+function renderCategories() {
+  if (!config.categoryIcons) config.categoryIcons = {};
+  document.getElementById('catList').innerHTML = config.categories.map((c,i) => {
+    const icon = config.categoryIcons[c] || '';
+    return `
+    <div class="card" style="margin-bottom:10px;">
+      <div class="form-row" style="align-items:center;">
+        <span class="order" style="width:40px;">#${i+1}</span>
+        <input value="${esc(c)}" onchange="updateCategory(${i},this.value)" style="flex:1;" />
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${icon ? `<img src="${esc(icon)}" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);" />` : `<view style="width:36px;height:36px;border-radius:50%;background:var(--border);"></view>`}
+          <input class="form-input" value="${esc(icon)}" placeholder="图标链接" onchange="updateCatIcon('${esc(c)}',this.value)" style="width:180px;" />
+          <label class="btn btn-primary btn-sm" style="cursor:pointer;white-space:nowrap;">上传
+            <input type="file" accept="image/*" style="display:none;" onchange="uploadCatIcon('${esc(c)}',this)" />
+          </label>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="config.categories.splice(${i},1);renderCategories();">删除</button>
+      </div>
+    </div>
+  `}).join('');
+}
+function addCategory() {
+  const inp = document.getElementById('newCat'); const v = inp.value.trim();
+  if (!v) return; config.categories.push(v); inp.value = ''; renderCategories();
+}
+function updateCategory(i,val) { config.categories[i]=val.trim()||config.categories[i]; }
+function updateCatIcon(cat, val) {
+  if (!config.categoryIcons) config.categoryIcons = {};
+  config.categoryIcons[cat] = val;
+}
+async function uploadCatIcon(cat, input) {
+  const file = input.files[0]; if (!file) return;
+  const form = new FormData(); form.append('file', file);
+  try {
+    showToast('上传中...');
+    const res = await fetch('/api/upload', { method:'POST', body:form });
+    const data = await res.json();
+    if (data.ok) {
+      if (!config.categoryIcons) config.categoryIcons = {};
+      config.categoryIcons[cat] = data.url;
+      renderCategories();
+      showToast('上传成功');
+    }
+  } catch(e) { showToast('上传失败'); }
+}
+
+// ---- Locations ----
+function renderLocations() {
+  document.getElementById('locList').innerHTML = config.locations.map((l,i) => `
+    <div class="item-row">
+      <span class="order">#${i+1}</span>
+      <input value="${esc(l)}" onchange="updateLocation(${i},this.value)" />
+      <button class="btn btn-danger btn-sm" onclick="config.locations.splice(${i},1);renderLocations();">删除</button>
+    </div>
+  `).join('');
+}
+function addLocation() {
+  const inp = document.getElementById('newLoc'); const v = inp.value.trim();
+  if (!v) return; config.locations.push(v); inp.value = ''; renderLocations();
+}
+function updateLocation(i,val) { config.locations[i]=val.trim()||config.locations[i]; }
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ---- Icons ----
+const tabKeys = [
+  { key: 'home', label: '首页' },
+  { key: 'publish', label: '发布' },
+  { key: 'messages', label: '消息' },
+  { key: 'profile', label: '我的' }
+];
+function renderIcons() {
+  if (!config.tabIcons) config.tabIcons = {};
+  const list = tabKeys.map(t => {
+    const icon = config.tabIcons[t.key] || { iconPath: '', selectedIconPath: '' };
+    return { ...t, ...icon };
+  });
+  document.getElementById('iconsList').innerHTML = list.map((t, i) => `
+    <div class="card">
+      <div class="card-header">${t.label} Tab</div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">默认态图标</label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input class="form-input" value="${esc(t.iconPath)}" placeholder="图片路径" onchange="updateIcon('${t.key}','iconPath',this.value)" style="flex:1;" />
+            <label class="btn btn-primary" style="cursor:pointer;font-size:12px;padding:8px 12px;white-space:nowrap;">上传
+              <input type="file" accept="image/*" style="display:none;" onchange="uploadIcon('${t.key}','iconPath',this)" />
+            </label>
+          </div>
+          ${t.iconPath ? `<img src="${esc(t.iconPath)}" style="width:40px;height:40px;margin-top:8px;border-radius:4px;border:1px solid var(--border);" />` : ''}
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">选中态图标</label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input class="form-input" value="${esc(t.selectedIconPath)}" placeholder="图片路径" onchange="updateIcon('${t.key}','selectedIconPath',this.value)" style="flex:1;" />
+            <label class="btn btn-primary" style="cursor:pointer;font-size:12px;padding:8px 12px;white-space:nowrap;">上传
+              <input type="file" accept="image/*" style="display:none;" onchange="uploadIcon('${t.key}','selectedIconPath',this)" />
+            </label>
+          </div>
+          ${t.selectedIconPath ? `<img src="${esc(t.selectedIconPath)}" style="width:40px;height:40px;margin-top:8px;border-radius:4px;border:1px solid var(--border);" />` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+function updateIcon(key, field, val) {
+  if (!config.tabIcons) config.tabIcons = {};
+  if (!config.tabIcons[key]) config.tabIcons[key] = {};
+  config.tabIcons[key][field] = val;
+}
+async function uploadIcon(key, field, input) {
+  const file = input.files[0]; if (!file) return;
+  const form = new FormData(); form.append('file', file);
+  try {
+    showToast('上传中...');
+    const res = await fetch('/api/upload', { method:'POST', body:form });
+    const data = await res.json();
+    if (data.ok) {
+      if (!config.tabIcons) config.tabIcons = {};
+      if (!config.tabIcons[key]) config.tabIcons[key] = {};
+      config.tabIcons[key][field] = data.url;
+      renderIcons();
+      showToast('上传成功');
+    }
+  } catch(e) { showToast('上传失败'); }
+}
+
+// ---- Orders ----
+let ordersData = { orders: [], acceptedTasks: [], myPosts: [] };
+
+async function loadOrders() {
+  try {
+    const res = await fetch('/api/orders');
+    if (res.ok) ordersData = await res.json();
+  } catch(e) {}
+  renderOrders();
+}
+function renderOrders() {
+  const all = [...(ordersData.orders||[]), ...(ordersData.acceptedTasks||[]), ...(ordersData.myPosts||[])];
+  const seen = new Set();
+  const unique = [];
+  for (const o of all) { if (!seen.has(o.id)) { seen.add(o.id); unique.push(o); } }
+  unique.sort((a,b) => (b.id||0) - (a.id||0));
+
+  document.getElementById('ordersList').innerHTML = unique.length === 0
+    ? '<div style="text-align:center;padding:60px;color:var(--muted);">暂无订单数据</div>'
+    : unique.map(o => `
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div>
+          <span style="font-size:12px;color:var(--muted);">#${o.id}</span>
+          <span style="padding:2px 8px;border-radius:8px;font-size:11px;margin-left:8px;background:${o.status==='done'?'rgba(74,180,74,0.12)':'rgba(224,155,74,0.12)'};color:${o.status==='done'?'#4AB44A':'#E09B4A'};">${o.status==='done'?'已接单':'未完成'}</span>
+          <span style="font-size:11px;margin-left:8px;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:8px;">${esc(o.tag||'-')}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:16px;font-weight:700;color:#E07B4A;">${o.reward>0?'¥'+o.reward:'无偿'}</span>
+          <button class="btn btn-danger btn-sm" onclick="deleteOrder(${o.id})">删除</button>
+        </div>
+      </div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:8px;">${esc(o.title||'-')}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">${esc(o.desc||'')}</div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding-top:8px;border-top:1px solid var(--border);">
+        <span>📍 ${esc(o.location||'-')}</span>
+        <span>🕐 ${esc(o.time||'-')}</span>
+        <span>👤 ${esc(o.user||'-')}</span>
+        <span>📝 ${esc(o.pubMeta||'-')}</span>
+      </div>
+    </div>
+  `).join('');
+}
+function deleteOrder(id) {
+  ['orders','acceptedTasks','myPosts'].forEach(k => { ordersData[k] = (ordersData[k]||[]).filter(o => o.id !== id); });
+  fetch('/api/orders/' + id, { method:'DELETE' })
+    .then(r => { if(r.ok){ showToast('已删除'); loadOrders(); } });
+}
+</script>
+</body>
+</html>
