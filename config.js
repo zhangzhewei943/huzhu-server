@@ -1,7 +1,7 @@
 module.exports = {
   // 服务器
   port: 3456,
-  domain: 'https://jojometro.com',
+  domain: 'https://jojometro.cloud',
 
   // 微信小程序
   wx: {
