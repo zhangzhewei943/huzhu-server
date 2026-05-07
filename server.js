@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // 静态文件：管理后台 + 上传文件
-app.use('/admin', express.static(path.join(__dirname, 'admin')));
+app.use('/123', express.static(path.join(__dirname, 'admin')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 文件上传
@@ -32,7 +32,7 @@ app.use('/api/config', require('./routes/config'));
 app.use('/api/orders', require('./routes/orders'));
 
 // 管理后台入口
-app.get('/admin', (req, res) => {
+app.get('/123', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'index.html'));
 });
 
