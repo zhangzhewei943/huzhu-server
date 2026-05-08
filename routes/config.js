@@ -13,12 +13,9 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 保存配置（管理后台调用）
+// 保存配置（管理后台调用，登录后即可操作）
 router.post('/save', async (req, res) => {
   const { password, ...data } = req.body;
-  // 简单的管理密码校验
-  if (password !== 'admin123') return res.status(403).json({ error: '密码错误' });
-
   try {
     const value = JSON.stringify(data);
     await pool.query(

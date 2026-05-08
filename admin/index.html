@@ -192,16 +192,14 @@ init();
 function renderAll() { renderBanners(); renderCategories(); renderLocations(); renderIcons(); }
 
 function saveConfig() {
-  const pw = prompt('请输入管理密码：');
-  if (!pw) return;
   config.banners.forEach((b,i) => b.order = i+1);
   fetch('/api/config/save', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...config, password: pw })
+    body: JSON.stringify(config)
   }).then(res => {
     if (res.ok) { showToast('已保存'); renderAll(); }
-    else showToast('密码错误或保存失败');
+    else showToast('保存失败');
   }).catch(() => showToast('保存失败'));
 }
 

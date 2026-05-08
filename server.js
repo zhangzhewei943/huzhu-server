@@ -47,7 +47,7 @@ const upload = multer({
   dest: path.join(__dirname, 'uploads'),
   limits: { fileSize: config.upload.maxSize }
 });
-app.post('/api/upload', requireAuth, upload.single('file'), (req, res) => {
+app.post('/api/upload', upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file' });
   const ext = path.extname(req.file.originalname) || '.png';
   const newName = Date.now() + '_' + Math.random().toString(36).slice(2, 8) + ext;
