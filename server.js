@@ -42,13 +42,6 @@ app.post('/api/admin/login', (req, res) => {
   }
 });
 
-// 登出
-app.post('/api/admin/logout', (req, res) => {
-  const token = req.headers.cookie && req.headers.cookie.match(/admin_token=([^;]+)/);
-  if (token) tokens.delete(token[1]);
-  res.json({ ok: true });
-});
-
 // 文件上传
 const upload = multer({
   dest: path.join(__dirname, 'uploads'),
@@ -68,13 +61,12 @@ app.use('/api/config', require('./routes/config'));
 app.use('/api/orders', require('./routes/orders'));
 
 // 管理后台（需登录）
-app.use('/123', requireAuth, express.static(path.join(__dirname, 'admin')));
-app.get('/123', requireAuth, (req, res) => {
+app.use('/admin', requireAuth, express.static(path.join(__dirname, 'admin')));
+app.get('/admin', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'index.html'));
 });
 
 app.listen(config.port, () => {
   console.log(`后端服务已启动: http://localhost:${config.port}`);
-  console.log(`管理后台: http://localhost:${config.port}/123`);
-  console.log(`登录页面: http://localhost:${config.port}/login`);
+  console.log(`管理后台: http://localhost:${config.port}/admin`);
 });
