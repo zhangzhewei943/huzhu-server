@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>管理后台 · 登录</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; background: #f0f2f5;
+  font-family: -apple-system, 'PingFang SC', sans-serif;
+}
+.card {
+  background: #fff; padding: 48px 40px; border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.08); width: 360px;
+}
+.card h1 { font-size: 22px; text-align: center; margin-bottom: 8px; }
+.card p { font-size: 14px; color: #888; text-align: center; margin-bottom: 32px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { font-size: 14px; color: #333; display: block; margin-bottom: 6px; }
+.form-group input {
+  width: 100%; padding: 12px 16px; border: 1px solid #e8e8e8; border-radius: 8px;
+  font-size: 15px; outline: none; font-family: inherit;
+}
+.form-group input:focus { border-color: #4A90D9; }
+.btn {
+  width: 100%; padding: 12px; background: #4A90D9; color: #fff;
+  border: none; border-radius: 8px; font-size: 16px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+}
+.btn:hover { opacity: 0.9; }
+.error { color: #E05050; font-size: 13px; text-align: center; margin-top: 12px; display: none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>互助小程序</h1>
+  <p>管理后台登录</p>
+  <div class="form-group">
+    <label>管理密码</label>
+    <input type="password" id="pw" placeholder="请输入密码" autofocus />
+  </div>
+  <button class="btn" onclick="login()">登录</button>
+  <div class="error" id="error">密码错误</div>
+</div>
+<script>
+async function login() {
+  const pw = document.getElementById('pw').value;
+  const res = await fetch('/api/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pw })
+  });
+  const data = await res.json();
+  if (data.ok) {
+    location.href = '/123';
+  } else {
+    document.getElementById('error').style.display = 'block';
+  }
+}
+document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+</script>
+</body>
+</html>
