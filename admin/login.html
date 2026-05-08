@@ -54,7 +54,7 @@ async function login() {
   });
   const data = await res.json();
   if (data.ok) {
-    location.href = '/123';
+    location.href = '/admin';
   } else {
     document.getElementById('error').style.display = 'block';
   }
